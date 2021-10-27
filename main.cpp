@@ -1,3 +1,7 @@
+//
+// Created by shaopu on 2021/10/27.
+// aimed at undirected, unweighted graph
+//
 #include<iostream>
 #include<list>
 #include<queue>
@@ -5,214 +9,164 @@
 
 using namespace std;
 
-struct GraphNode
-{
-    int vertix;
-    // adjacent list
-    list<GraphNode*> neighbors;
-    // initialization list
-    explicit GraphNode(int val):vertix(val) {}
-};
-
-class Graph
-{
+class Graph{
+    // graphNode
 private:
-    // size
-    int size;
-    // adjacent list
-    vector<GraphNode*> adj;
+    // if the given edge is not represented as an integer,
+    // we should use a hashtable, or a map to reflect them
+    // into integers
+    list<int>* adj;
+    // if it is a weighted graph, then we should use pair:
 
+    // list<pair<int, int>>* adj;
+
+    // size of the nodes
+    int size;
 public:
-    explicit Graph(int curSize);
+    explicit Graph(int v);
     ~Graph();
-    void clear(vector<GraphNode*>& nodeSet);
-    void addEdge(GraphNode* startV, GraphNode* endV);
-    GraphNode intersect(bool* startVisited, bool* endVisited) const;
-    void performBFS(bool* visited, queue<GraphNode*>& queue, vector<GraphNode*>& parentV);
-    static void printPath(vector<GraphNode*>& startParentV,  vector<GraphNode*>& endParentV, GraphNode* intersectV) ;
-    bool biDirectionSearch(GraphNode* startV, GraphNode* endV);
+    void addEdge(int start, int neighbor);
+    void performBFS(bool* visited, queue<int>& nodeQueue, vector<int>& parent);
+    static void printPath(vector<int>& startParent, vector<int>& endParent, int intersectV);
+    bool biDirectionSearch(int start, int end);
+    int intersect(const bool* startVisited, const bool* endVisited) const;
 };
 
-Graph::Graph(int curSize) {
-    size = curSize;
-    // initialize the list
-    for (int i = 0; i < size; ++i) {
-        // fill the size,
-        adj.push_back(new GraphNode(0));
-    }
+Graph::Graph(int v) {
+    size = v;
+    // allocate the memory for the adj list
+    adj = new list<int>[size];
 }
 
 Graph::~Graph() {
-    clear(adj);
+    // free the adj allocated memory
+    delete [] adj;
 }
 
-void Graph::clear(vector<GraphNode*>& nodeSet) {
-    // free the memory allocated in the constructor function
-    for (int i = 0; i < size; ++i) {
-        // free the vector
-        if (adj[i] != nullptr) {
-            // free the list
-            list<GraphNode*>::iterator it;
-            for (it = adj[i]->neighbors.begin(); it != adj[i]->neighbors.end(); ++it) {
-                if (*it != nullptr) {
-                    GraphNode* trash = *it;
-                    delete trash;
-                }
-            }
-            // free the vector memory
-            delete adj[i];
-        }
-    }
-}
-
-void Graph::addEdge(GraphNode* startV, GraphNode* endV) {
-    adj[startV->vertix]->neighbors.push_back(endV);
+void Graph::addEdge(int start, int neighbor) {
     // undirected graph
-    adj[endV->vertix]->neighbors.push_back(startV);
+    adj[start].push_back(neighbor);
+    adj[neighbor].push_back(start);
 }
 
-GraphNode Graph::intersect(bool* startVisited, bool* endVisited) const {
-    GraphNode intersetNode(-1);
-    for (int i = 0; i < size; ++i) {
-        if (startVisited[i] && endVisited[i]) {
-            intersetNode.vertix = i;
-            return intersetNode;
-        }
-    }
-    return intersetNode;
-}
-
-/**
- * process neighbors of one node in thr graph, add its neighbors to the node's adjacent list
- */
-void Graph::performBFS(bool* visited, queue<GraphNode*>& queue, vector<GraphNode*>& parentV) {
-    GraphNode* first = queue.front();
-    // pop the current node from the queue
-    queue.pop();
-    visited[first->vertix] = true;
-    list<GraphNode*>::iterator it;
-    // check all the neighbors of the current node
-    for (it = adj[first->vertix]->neighbors.begin(); it != adj[first->vertix]->neighbors.end(); ++it) {
-        // it is an iterator, which is a pointer type, we should use "*" to ge the content of it, which
-        // is also a pointer type
-        // also, we should notice that we must put "()" in the code, since the priority reason
-        if (!visited[(*it)->vertix]) {
-            queue.push(*it);
-            parentV[(*it)->vertix] = first;
+void Graph::performBFS(bool *visited, queue<int> &nodeQueue, vector<int> &parent) {
+    // first element in the current queue
+    int first = nodeQueue.front();
+    // mark it visited
+    visited[first] = true;
+    // pop it
+    nodeQueue.pop();
+    // add its neighbors to the queue
+    list<int>::iterator it;
+    for (it = adj[first].begin(); it != adj[first].end(); ++it) {
+        // not visited
+        if (!visited[*it]) {
+            // add to the queue
+            nodeQueue.push(*it);
+            // set the parent of *it to first
+            parent[*it] = first;
         }
     }
 }
 
-bool Graph::biDirectionSearch(GraphNode* startV, GraphNode* endV) {
+bool Graph::biDirectionSearch(int start, int end) {
     bool startVisited[size];
     bool endVisited[size];
 
-    vector<GraphNode*> startParent(size);
-    vector<GraphNode*> endParent(size);
-
-    queue<GraphNode*> startQueue;
-    queue<GraphNode*> endQueue;
-    // initialize the visit flag list
+    // initialize the visited list
     for (int i = 0; i < size; ++i) {
         startVisited[i] = false;
         endVisited[i] = false;
     }
-    // initialize the start point queue
-    startQueue.push(startV);
-    startVisited[startV->vertix] = true;
-    // allocate new memory to store node data
-    startParent[startV->vertix] = new GraphNode(-1);
-    // initialize the end point queue
-    endQueue.push(endV);
-    endVisited[endV->vertix] = true;
-    endParent[endV->vertix] = new GraphNode(-1);
 
+    vector<int> startParent(size);
+    vector<int> endParent(size);
+
+    queue<int> startQueue;
+    queue<int> endQueue;
+
+    // initialize the first node
+
+    // start
+    startQueue.push(start);
+    startVisited[start] = true;
+    startParent[start] = -1;
+
+    // end
+    endQueue.push(end);
+    endVisited[end] = true;
+    endParent[end] = -1;
+
+    // start to traverse/explore
     while (!startQueue.empty() && !endQueue.empty()) {
         performBFS(startVisited, startQueue, startParent);
         performBFS(endVisited, endQueue, endParent);
 
-        GraphNode intersectNode = intersect(startVisited, endVisited);
-        if (intersectNode.vertix != -1) {
-            printPath(startParent, endParent, &intersectNode);
-            // free the parent allocated memory
-            clear(startParent);
-            clear(endParent);
+        // if intersecting
+        int intersectNode = intersect(startVisited, endVisited);
+        if (intersectNode != -1) {
+            // print the path and end
+            printPath(startParent, endParent, intersectNode);
             return true;
         }
     }
-    // free the parent allocated memory
-    clear(startParent);
-    clear(endParent);
     return false;
 }
 
-void Graph::printPath(vector<GraphNode*>& startParentV,  vector<GraphNode*>& endParentV, GraphNode* intersectV) {
-                    vector<GraphNode*> path;
-                    path.push_back(intersectV);
-                    int i = intersectV->vertix;
-                    while (startParentV[i]->vertix != -1) {
-//                        cout << "loop" << endl;
-                        path.insert(path.begin(), startParentV[i]);
-//                        cout << "i: " << i << endl;
-                        i = startParentV[i]->vertix;
-                    }
-                    i = intersectV->vertix;
-                    while (endParentV[i]->vertix != -1) {
-//                        cout << "loop" << endl;
-                        path.push_back(endParentV[i]);
-                        i = endParentV[i]->vertix;
-                    }
-                    vector<GraphNode*>::iterator it;
-                    for (it = path.begin(); it != path.end(); ++it) {
-                        cout << (*it)->vertix << endl;
-                    }
-                }
+int Graph::intersect(const bool *startVisited, const bool *endVisited) const {
+    for (int i = 0; i < size; ++i) {
+        if (startVisited[i] && endVisited[i]) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+void Graph::printPath(vector<int> &startParent, vector<int> &endParent, int intersectV) {
+    vector<int> path;
+    path.push_back(intersectV);
+    int i = intersectV;
+    while (startParent[i] != -1) {
+        path.insert(path.begin(), startParent[i]);
+        i = startParent[i];
+    }
+    i = intersectV;
+    while (endParent[i] != -1) {
+        path.push_back(endParent[i]);
+        i = endParent[i];
+    }
+    // output the path
+    for (int j : path) {
+        cout << j << endl;
+    }
+}
 
 int main() {
-    // number of vertices
-    int n=15;
 
-    // source vertex
-    auto* start = new GraphNode(0);
+    int n = 15;
+    int start = 0;
+    int end = 14;
 
-    // target vertex
-    auto* end = new GraphNode(14);
+    Graph test(n);
+    test.addEdge(start, 4);
+    test.addEdge(1, 4);
+    test.addEdge(2, 5);
+    test.addEdge(3, 5);
+    test.addEdge(4, 6);
+    test.addEdge(5, 6);
+    test.addEdge(6, 7);
+    test.addEdge(7, 8);
+    test.addEdge(8, 9);
+    test.addEdge(8, 10);
+    test.addEdge(9, 11);
+    test.addEdge(9, 12);
+    test.addEdge(10, 13);
+    test.addEdge(10, end);
 
-    // create a graph given in above diagram
-    auto* node1 = new GraphNode(1);
-    auto* node2 = new GraphNode(2);
-    auto* node3 = new GraphNode(3);
-    auto* node4 = new GraphNode(4);
-    auto* node5 = new GraphNode(5);
-    auto* node6 = new GraphNode(6);
-    auto* node7 = new GraphNode(7);
-    auto* node8 = new GraphNode(8);
-    auto* node9 = new GraphNode(9);
-    auto* node10 = new GraphNode(10);
-    auto* node11 = new GraphNode(11);
-    auto* node12 = new GraphNode(12);
-    auto* node13 = new GraphNode(13);
-
-    Graph g(n);
-    g.addEdge(start, node4);
-    g.addEdge(node1, node4);
-    g.addEdge(node2, node5);
-    g.addEdge(node3, node5);
-    g.addEdge(node4, node6);
-    g.addEdge(node5, node6);
-    g.addEdge(node6, node7);
-    g.addEdge(node7, node8);
-    g.addEdge(node8, node9);
-    g.addEdge(node8, node10);
-    g.addEdge(node9, node11);
-    g.addEdge(node9, node12);
-    g.addEdge(node10, node13);
-    g.addEdge(node10, end);
-
-    if(!g.biDirectionSearch(start, end)) {
-        cout << "cannot find a path between the given two nodes." << endl;
+    if (test.biDirectionSearch(start, end)) {
+        cout << "OK!" << endl;
     }
 
     return 0;
-
 }
+
