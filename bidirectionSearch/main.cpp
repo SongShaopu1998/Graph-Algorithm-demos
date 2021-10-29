@@ -52,8 +52,6 @@ void Graph::addEdge(int start, int neighbor) {
 void Graph::performBFS(bool *visited, queue<int> &nodeQueue, vector<int> &parent) {
     // first element in the current queue
     int first = nodeQueue.front();
-    // mark it visited
-    visited[first] = true;
     // pop it
     nodeQueue.pop();
     // add its neighbors to the queue
@@ -65,6 +63,8 @@ void Graph::performBFS(bool *visited, queue<int> &nodeQueue, vector<int> &parent
             nodeQueue.push(*it);
             // set the parent of *it to first
             parent[*it] = first;
+            // mark it visited
+            visited[*it] = true;
         }
     }
 }
